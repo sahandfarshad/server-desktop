@@ -1,0 +1,7 @@
+/server-desktop
+/server-desktop-linux-*
+/dist/
+*.tar.gz
+*.tmp
+/data/
+/seed-data/
