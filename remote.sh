@@ -130,6 +130,8 @@ adduser xrdp ssl-cert >/dev/null 2>&1 || true
 sed -i "s/^port=.*/port=$SD_PORT/" /etc/xrdp/xrdp.ini
 grep -q "^port=$SD_PORT" /etc/xrdp/xrdp.ini || die "could not set the RDP port in /etc/xrdp/xrdp.ini"
 sed -i 's/^max_bpp=.*/max_bpp=24/' /etc/xrdp/xrdp.ini
+# Only offer the Xorg session on the login screen (Xvnc/vnc-any/neutrinordp are not installed/used).
+awk '/^\[/{n=$0; gsub(/[][]/,"",n); skip=(n=="Xvnc"||n=="vnc-any"||n=="neutrinordp-any"||n=="Xvnc-any")} !skip' /etc/xrdp/xrdp.ini >/etc/xrdp/xrdp.ini.sd && mv /etc/xrdp/xrdp.ini.sd /etc/xrdp/xrdp.ini
 # Root login over RDP off; one session per user that reconnects on return.
 sed -i 's/^AllowRootLogin=.*/AllowRootLogin=false/' /etc/xrdp/sesman.ini
 sed -i 's/^Policy=.*/Policy=Default/' /etc/xrdp/sesman.ini
