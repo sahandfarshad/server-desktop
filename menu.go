@@ -153,7 +153,7 @@ func drawMenu(st *Store) {
 	item("2", "Change port")
 	item("3", "Domain + SSL (Let's Encrypt)")
 	item("4", "Remove SSL (back to HTTP)")
-	item("5", "Admin password (show / reset)")
+	item("5", "Admin login (username / password)")
 	item("6", "Admin path")
 	section("SYSTEM")
 	item("7", "Restart")
@@ -210,11 +210,20 @@ func runMenu(dir string) {
 				fmt.Println("  Now: " + bold(siteURL(st)))
 			}
 		case "5":
+			fmt.Println("  Username: " + bold(st.Cfg.User))
 			if p := readPlainPass(dir); p != "" {
-				fmt.Println("  Username: " + st.Cfg.User)
 				fmt.Println("  Password: " + bold(p))
 			} else {
 				fmt.Println("  The password was changed by you, so it is not stored in readable form.")
+			}
+			if nu := strings.TrimSpace(prompt("New username (Enter keeps it)", st.Cfg.User)); nu != st.Cfg.User {
+				if !validAdminUser(nu) {
+					fmt.Println("  Username: 3 to 32 letters, digits, dot, dash or underscore. Username not changed.")
+				} else {
+					st.Cfg.User = nu
+					saveAndRestart(st)
+					fmt.Println("  New username: " + bold(nu))
+				}
 			}
 			if yes("Reset it to a new random password?") {
 				p := randPassword(14)
@@ -471,5 +480,17 @@ func uninstall(dir string, ask bool) bool {
 	}
 	os.Remove(binPath)
 	fmt.Println("  Server Desktop removed.")
+	return true
+}
+
+func validAdminUser(u string) bool {
+	if len(u) < 3 || len(u) > 32 {
+		return false
+	}
+	for _, c := range u {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '.' || c == '-' || c == '_') {
+			return false
+		}
+	}
 	return true
 }
