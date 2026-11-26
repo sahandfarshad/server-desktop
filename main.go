@@ -18,7 +18,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.2.1"
+var version = "0.2.2"
 
 const (
 	repo    = "sahandfarshad/server-desktop"
