@@ -18,7 +18,7 @@ import (
 	"golang.org/x/term"
 )
 
-var version = "0.1.0"
+var version = "0.2.0"
 
 const (
 	repo    = "sahandfarshad/server-desktop"
@@ -66,6 +66,8 @@ func main() {
 		if err != nil || p < 1 || p > 65535 || !portFree(p) {
 			os.Exit(1)
 		}
+	case "local-install":
+		localInstall(mustStore(dir))
 	case "info":
 		st := mustStore(dir)
 		printInfo(st)
@@ -78,7 +80,7 @@ func main() {
 	case "version", "-v", "--version":
 		fmt.Println("Server Desktop", version)
 	default:
-		fmt.Println("usage: server-desktop [menu|serve|init|info|update|uninstall|version]")
+		fmt.Println("usage: server-desktop [menu|serve|init|info|local-install|update|uninstall|version]")
 		os.Exit(2)
 	}
 }

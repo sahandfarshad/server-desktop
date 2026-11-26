@@ -9,11 +9,15 @@
 bash <(curl -fsSL https://github.com/sahandfarshad/server-desktop/releases/latest/download/install.sh)
 ```
 
-بعد از نصب، منو با دستور `sd` باز می‌شود و آدرس پنل بالای منو است.
+در حین نصب می‌پرسد که دسکتاپ روی همین سرور هم نصب شود یا نه؛ اگر بله، نام کاربری، رمز، پورت RDP و Firefox را می‌پرسد.
+بعد از نصب، منو با دستور `sd` باز می‌شود و آدرس پنل و آدرس Remote Desktop همین سرور بالای منو است (گزینه‌ی 10 برای نصب یا تغییر بعدی).
+
+پنل به‌طور پیش‌فرض انگلیسی است و از دکمه‌ی زبان بالای صفحه ۱۵ زبان دارد؛ انتخاب در مرورگر ذخیره می‌شود.
+متن‌ها در `i18n/strings.py` هستند؛ بعد از تغییر `python3 i18n/build.py` فایل `ui.html` را می‌سازد.
 
 ## افزودن سرور
 
-در پنل: IP، پورت و رمز SSH، نام کاربری و رمز دسکتاپ، پورت Remote Desktop (پیش‌فرض 3389)، و اختیاری: نصب Firefox و دسترسی sudo.
+در پنل («New server» یا «Install on this server» برای همین سرور): IP، پورت و رمز SSH، نام کاربری و رمز دسکتاپ، پورت Remote Desktop (پیش‌فرض 3389)، و اختیاری: نصب Firefox و دسترسی sudo.
 بعد از نصب، از پنل فایل `.rdp` را دانلود کن یا آدرس `IP:پورت` را در Remote Desktop Connection ویندوز (mstsc)، Microsoft Remote Desktop / Windows App در مک و موبایل، یا Remmina در لینوکس بزن.
 
 چیزهایی که نصب می‌شود: IceWM (با تسک‌بار)، xrdp + xorgxrdp، ترمینال xterm، فایل‌منیجر PCManFM، فونت‌های فارسی (Vazirmatn و Noto) و در صورت انتخاب Firefox از مخزن رسمی Mozilla.

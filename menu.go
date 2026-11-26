@@ -124,7 +124,7 @@ func drawMenu(st *Store) {
 	fmt.Println("  " + dim("╭"+strings.Repeat("─", w)+"╮"))
 	fmt.Println("  " + dim("│") + " " + cGold + cBold + title + cReset + strings.Repeat(" ", max(pad, 1)) + dim(ver) + " " + dim("│"))
 	fmt.Println("  " + dim("╰"+strings.Repeat("─", w)+"╯"))
-	row := func(k, v string) { fmt.Printf("   %s%-7s%s %s\n", cDim, k, cReset, v) }
+	row := func(k, v string) { fmt.Printf("   %s%-8s%s %s\n", cDim, k, cReset, v) }
 	row("Panel", bold(siteURL(st))+"  "+dot(state == "active", orStr(state, "no systemd")))
 	row("Admin", siteURL(st)+c.AdminPath)
 	row("User", c.User)
@@ -136,6 +136,13 @@ func drawMenu(st *Store) {
 		}
 	}
 	row("SSL", ssl)
+	if ls := localServer(st); ls != nil {
+		d := cYel + map[string]string{"new": "not installed", "installing": "installing…", "failed": "install failed (menu 10)", "removed": "removed"}[ls.Status] + cReset
+		if ls.Status == "installed" {
+			d = bold(rdpAddr(st, ls)) + "  " + dim("user ") + ls.DeskUser
+		}
+		row("Desktop", d)
+	}
 	section := func(name string) {
 		fmt.Println()
 		fmt.Println("   " + cDim + cBold + name + cReset + " " + dim(strings.Repeat("─", w-len(name)-1)))
@@ -152,6 +159,12 @@ func drawMenu(st *Store) {
 	item("7", "Restart")
 	item("8", "Update")
 	item("9", cRed+"Uninstall"+cReset)
+	section("DESKTOP")
+	if localServer(st) == nil {
+		item("10", "Install Remote Desktop on this server")
+	} else {
+		item("10", "Remote Desktop on this server (reinstall / change)")
+	}
 	fmt.Println()
 	item("0", dim("Exit"))
 	fmt.Println()
@@ -229,6 +242,8 @@ func runMenu(dir string) {
 			st.Cfg.AdminPath = np
 			saveAndRestart(st)
 			fmt.Println("  Admin: " + bold(siteURL(st)+np))
+		case "10":
+			localInstall(st)
 		case "7":
 			restartService()
 		case "8":

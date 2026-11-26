@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	osexec "os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ var remoteScript string
 
 // Job is one running or finished action on a server, with its live log.
 type Job struct {
+	echo   func(string) // also print each line (CLI install)
 	mu     sync.Mutex
 	Action string
 	Lines  []string
@@ -28,6 +30,9 @@ type Job struct {
 }
 
 func (j *Job) add(s string) {
+	if j.echo != nil {
+		j.echo(s)
+	}
 	j.mu.Lock()
 	j.Lines = append(j.Lines, s)
 	if len(j.Lines) > 5000 {
@@ -109,7 +114,59 @@ func (r *Runner) run(sv *Server, j *Job) {
 	}
 }
 
+// RunSync runs action on server id in the foreground, printing the log.
+func (r *Runner) RunSync(id, action string, echo func(string)) error {
+	sv := r.st.Server(id)
+	if sv == nil {
+		return errors.New("server not found")
+	}
+	j := &Job{Action: action, echo: echo}
+	if action == "install" {
+		sv.Status, sv.LastError = "installing", ""
+		_ = r.st.SaveServer(sv)
+	}
+	r.run(sv, j)
+	if !j.OK {
+		return errors.New("failed")
+	}
+	return nil
+}
+
+func (r *Runner) script(sv *Server, action string) string {
+	env := map[string]string{
+		"SD_ACTION":  action,
+		"SD_USER":    sv.DeskUser,
+		"SD_PASS":    r.st.Decrypt(sv.DeskPass),
+		"SD_PORT":    strconv.Itoa(sv.RDPPort),
+		"SD_FIREFOX": b01(sv.Firefox),
+		"SD_SUDO":    b01(sv.Sudo),
+	}
+	var head strings.Builder
+	for k, v := range env {
+		head.WriteString("export " + k + "='" + strings.ReplaceAll(v, "'", `'\''`) + "'\n")
+	}
+	return head.String() + remoteScript
+}
+
+func (r *Runner) execLocal(sv *Server, j *Job) error {
+	j.add("Running on this server …")
+	c := osexec.Command("bash", "-s")
+	c.Stdin = strings.NewReader(r.script(sv, j.Action)) // secrets via stdin, never argv
+	pr := &lineWriter{fn: j.add}
+	c.Stdout, c.Stderr = pr, pr
+	err := c.Run()
+	pr.flush()
+	var ee *osexec.ExitError
+	if errors.As(err, &ee) {
+		return fmt.Errorf("step failed (exit %d); see the log above", ee.ExitCode())
+	}
+	return err
+}
+
 func (r *Runner) exec(sv *Server, j *Job) error {
+	if sv.Local {
+		return r.execLocal(sv, j)
+	}
 	pass := r.st.Decrypt(sv.SSHPass)
 	auth := []ssh.AuthMethod{
 		ssh.Password(pass),
@@ -156,20 +213,8 @@ func (r *Runner) exec(sv *Server, j *Job) error {
 		return err
 	}
 	defer sess.Close()
-	env := map[string]string{
-		"SD_ACTION":  j.Action,
-		"SD_USER":    sv.DeskUser,
-		"SD_PASS":    r.st.Decrypt(sv.DeskPass),
-		"SD_PORT":    strconv.Itoa(sv.RDPPort),
-		"SD_FIREFOX": b01(sv.Firefox),
-		"SD_SUDO":    b01(sv.Sudo),
-	}
-	var head strings.Builder
-	for k, v := range env {
-		head.WriteString("export " + k + "='" + strings.ReplaceAll(v, "'", `'\''`) + "'\n")
-	}
 	// Secrets go through stdin, never the command line.
-	sess.Stdin = strings.NewReader(head.String() + remoteScript)
+	sess.Stdin = strings.NewReader(r.script(sv, j.Action))
 	pr := &lineWriter{fn: j.add}
 	sess.Stdout, sess.Stderr = pr, pr
 	cmd := "bash -s"

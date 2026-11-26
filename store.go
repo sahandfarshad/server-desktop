@@ -47,6 +47,7 @@ type Server struct {
 	DeskPass   string `json:"deskPass"` // encrypted
 	Firefox    bool   `json:"firefox"`
 	Sudo       bool   `json:"sudo"`
+	Local      bool   `json:"local,omitempty"` // the panel's own server, run without SSH
 	HostKey    string `json:"hostKey,omitempty"` // SSH fingerprint pinned on first connect
 	Status     string `json:"status"`            // new | installing | installed | failed | removed
 	LastError  string `json:"lastError,omitempty"`

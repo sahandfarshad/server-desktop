@@ -73,4 +73,8 @@ if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: a
   ufw allow "$PORT/tcp" >/dev/null && say "Firewall (ufw): port $PORT opened."
 fi
 "$BIN" info
+if [ -n "$TTY" ] && ! grep -qs '"local": true' "$SD_DIR/servers.json"; then
+  ask "Install Remote Desktop (IceWM + xrdp) on this server too? (y/N)" "n"
+  case "$REPLY" in y|Y|yes|YES) "$BIN" local-install <"$TTY" || true ;; esac
+fi
 if [ -n "$TTY" ] && [ "${SD_NO_MENU:-}" != 1 ]; then "$BIN" menu <"$TTY" || true; fi

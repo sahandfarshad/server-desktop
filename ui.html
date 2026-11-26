@@ -1,114 +1,167 @@
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Server Desktop</title>
 <style>
 :root{--bg:#0f1115;--card:#171a21;--line:#262a33;--tx:#e8e6e3;--mut:#8b909a;--acc:#4c8dff;--ok:#3ecf8e;--bad:#ff5d5d;--warn:#f5b84a}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 Vazirmatn,Tahoma,system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Vazirmatn,Tahoma,"Noto Sans","Noto Sans Ethiopic","Noto Sans Myanmar","Myanmar Text","Nyala","Ebrima",sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:28px 18px}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:22px}
 h1{font-size:20px;margin:0;display:flex;gap:10px;align-items:center}h1 i{width:12px;height:12px;border-radius:50%;background:var(--acc);display:inline-block}
-.mut{color:var(--mut);font-size:13px}
+.mut{color:var(--mut);font-size:13px}.top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 button,.btn{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:9px;padding:7px 13px;font:inherit;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block}
 button:hover,.btn:hover{border-color:#3a3f4a}.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}.pri:hover{border-color:#86b0ff}
 .danger{color:var(--bad)}button:disabled{opacity:.45;cursor:default}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-.name{font-weight:600;font-size:16px}.meta{direction:ltr;text-align:right;color:var(--mut);font-size:13px}
+.name{font-weight:600;font-size:16px}.meta{direction:ltr;unicode-bidi:isolate;color:var(--mut);font-size:13px}
 .badge{font-size:12px;padding:2px 9px;border-radius:20px;border:1px solid var(--line)}
 .s-installed{color:var(--ok);border-color:#24533f}.s-failed{color:var(--bad);border-color:#5a2a2a}.s-installing{color:var(--warn);border-color:#5a4a22}
+.here{font-size:11px;color:var(--acc);border:1px solid #2c4a7a;border-radius:20px;padding:1px 8px;margin-inline-start:6px;vertical-align:2px}
 .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .err{color:var(--bad);font-size:13px;margin-top:8px}
 pre{direction:ltr;text-align:left;background:#0b0c0f;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:360px;overflow:auto;font:12px/1.55 ui-monospace,Menlo,monospace;margin:12px 0 0;white-space:pre-wrap}
 dialog{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(520px,94vw)}
 dialog::backdrop{background:#000a}
 label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+label.ck{display:flex;gap:8px;align-items:center;color:var(--tx)}label.ck input{width:auto}
 input,select{width:100%;background:#0f1115;color:var(--tx);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit}
 input.ltr{direction:ltr;text-align:left}.g2{display:grid;grid-template-columns:2fr 1fr;gap:10px}.g11{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .empty{text-align:center;padding:50px 20px;color:var(--mut)}
-#login{max-width:340px;margin:12vh auto}
+#login{max-width:360px;margin:12vh auto}#login .lrow{display:flex;justify-content:space-between;align-items:center}
+/* language picker */
+.lang{position:relative}
+.lang>button{display:flex;gap:7px;align-items:center;border-radius:20px;padding:6px 12px}
+.lang>button svg{width:15px;height:15px;opacity:.8}
+.lang-pop{position:absolute;top:calc(100% + 8px);inset-inline-end:0;z-index:20;width:300px;background:#1b1f27;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px #000b;padding:8px;display:none}
+.lang.open .lang-pop{display:block;animation:pop .14s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.lang-pop input{margin-bottom:6px;padding:7px 10px;font-size:13px}
+.lang-list{max-height:min(380px,60vh);overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.lang-list button{all:unset;cursor:pointer;padding:7px 10px;border-radius:9px;display:flex;flex-direction:column;line-height:1.3}
+.lang-list button:hover,.lang-list button:focus-visible{background:#262b35}
+.lang-list button.on{background:#1e3157;outline:1px solid #2f5aa8}
+.lang-list b{font-weight:600;font-size:14px}.lang-list small{color:var(--mut);font-size:11px;direction:ltr}
 </style>
 </head>
 <body>
+<template id="langTpl">
+  <div class="lang">
+    <button type="button" class="lang-btn" aria-haspopup="listbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 3.9 5.8 3.9 9s-1.3 6.2-3.9 9c-2.6-2.8-3.9-5.8-3.9-9S9.4 5.8 12 3z"/></svg><span class="lang-cur"></span></button>
+    <div class="lang-pop"><input type="search" class="lang-q" placeholder="Search / جستجو"><div class="lang-list" role="listbox"></div></div>
+  </div>
+</template>
+
 <div id="login" class="card" hidden>
-  <h1><i></i> Server Desktop</h1>
-  <label>نام کاربری</label><input id="lu" class="ltr" autocomplete="username">
-  <label>رمز</label><input id="lp" class="ltr" type="password" autocomplete="current-password">
+  <div class="lrow"><h1><i></i> Server Desktop</h1><span class="lang-slot"></span></div>
+  <label data-t="user"></label><input id="lu" class="ltr" autocomplete="username">
+  <label data-t="pass"></label><input id="lp" class="ltr" type="password" autocomplete="current-password">
   <div class="err" id="lerr"></div>
-  <p><button class="pri" id="lbtn" style="width:100%">ورود</button></p>
+  <p><button class="pri" id="lbtn" style="width:100%" data-t="login"></button></p>
 </div>
 
 <div class="wrap" id="app" hidden>
   <header>
     <h1><i></i> Server Desktop <span class="mut" id="ver"></span></h1>
-    <div><button class="pri" onclick="openForm()">+ سرور جدید</button> <button onclick="logout()">خروج</button></div>
+    <div class="top"><button class="pri" onclick="openForm()">+ <span data-t="add"></span></button><button id="localBtn" onclick="openForm(null,true)" data-t="local"></button><span class="lang-slot"></span><button onclick="logout()" data-t="logout"></button></div>
   </header>
   <div id="list"></div>
 </div>
 
 <dialog id="dlg">
   <form method="dialog" id="frm" onsubmit="return false">
-    <div class="name" id="ftitle">سرور جدید</div>
-    <input type="hidden" name="ID">
-    <label>نام (دلخواه)</label><input name="Name" placeholder="مثلاً آلمان ۱">
-    <div class="g2"><div><label>IP سرور</label><input name="Host" class="ltr" required placeholder="1.2.3.4"></div>
-      <div><label>پورت SSH</label><input name="SSHPort" class="ltr" type="number" value="22"></div></div>
-    <div class="g11"><div><label>کاربر SSH</label><input name="SSHUser" class="ltr" value="root"></div>
-      <div><label>رمز SSH</label><input name="SSHPass" class="ltr" type="password" autocomplete="new-password"></div></div>
-    <div class="g11"><div><label>نام کاربری دسکتاپ</label><input name="DeskUser" class="ltr" value="desktop"></div>
-      <div><label>رمز دسکتاپ (حداقل ۸)</label><input name="DeskPass" class="ltr" type="password" autocomplete="new-password"></div></div>
-    <label>پورت Remote Desktop</label><input name="RDPPort" class="ltr" type="number" value="3389">
-    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="Firefox" style="width:auto" checked> نصب Firefox روی دسکتاپ</label>
-    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="Sudo" style="width:auto"> دسترسی sudo برای کاربر دسکتاپ</label>
-    <label style="display:flex;gap:8px;align-items:center" id="hkrow"><input type="checkbox" name="ClearHostKey" style="width:auto"> پاک کردن کلید SSH ذخیره‌شده (اگر سرور را دوباره نصب کرده‌ای)</label>
+    <div class="name" id="ftitle"></div>
+    <input type="hidden" name="ID"><input type="hidden" name="Local">
+    <label data-t="name_opt"></label><input name="Name" data-tp="name_ph">
+    <div id="sshBox">
+      <div class="g2"><div><label data-t="ip"></label><input name="Host" class="ltr" placeholder="1.2.3.4"></div>
+        <div><label data-t="ssh_port"></label><input name="SSHPort" class="ltr" type="number" value="22"></div></div>
+      <div class="g11"><div><label data-t="ssh_user"></label><input name="SSHUser" class="ltr" value="root"></div>
+        <div><label data-t="ssh_pass"></label><input name="SSHPass" class="ltr" type="password" autocomplete="new-password"></div></div>
+    </div>
+    <div class="g11"><div><label data-t="desk_user"></label><input name="DeskUser" class="ltr" value="desktop"></div>
+      <div><label data-t="desk_pass"></label><input name="DeskPass" class="ltr" type="password" autocomplete="new-password"></div></div>
+    <label data-t="rdp_port"></label><input name="RDPPort" class="ltr" type="number" value="3389">
+    <label class="ck"><input type="checkbox" name="Firefox" checked> <span data-t="firefox"></span></label>
+    <label class="ck"><input type="checkbox" name="Sudo"> <span data-t="sudo"></span></label>
+    <label class="ck" id="hkrow"><input type="checkbox" name="ClearHostKey"> <span data-t="clear_key"></span></label>
     <p class="mut" id="fhint"></p>
     <div class="err" id="ferr"></div>
-    <div class="acts"><button class="pri" onclick="save(true)">ذخیره و نصب</button><button onclick="save(false)">فقط ذخیره</button><button onclick="dlg.close()">انصراف</button></div>
+    <div class="acts"><button class="pri" onclick="save(true)" data-t="save_install"></button><button onclick="save(false)" data-t="save_only"></button><button onclick="dlg.close()" data-t="cancel"></button></div>
   </form>
 </dialog>
 
 <script>
+const LANGS = [["en", "English", "English", false], ["fa", "فارسی", "Persian", true], ["ar", "العربية", "Arabic", true], ["ur", "اردو", "Urdu", true], ["tr", "Türkçe", "Turkish", false], ["tk", "Türkmençe", "Turkmen", false], ["ru", "Русский", "Russian", false], ["be", "Беларуская", "Belarusian", false], ["zh", "中文", "Chinese", false], ["ko", "조선어", "Korean", false], ["my", "မြန်မာ", "Burmese", false], ["vi", "Tiếng Việt", "Vietnamese", false], ["es", "Español", "Spanish", false], ["am", "አማርኛ", "Amharic", false], ["ti", "ትግርኛ", "Tigrinya", false]];
+const I18N = {"en": {"lang": "Language", "user": "Username", "pass": "Password", "login": "Sign in", "wrong": "Wrong username or password", "add": "New server", "local": "Install on this server", "logout": "Sign out", "empty": "No servers yet.", "add_first": "Add your first server", "new_server": "New server", "local_title": "Desktop on this server", "edit_title": "Edit {name}", "name_opt": "Name (optional)", "name_ph": "e.g. Germany 1", "ip": "Server IP", "ssh_port": "SSH port", "ssh_user": "SSH user", "ssh_pass": "SSH password", "desk_user": "Desktop username", "desk_pass": "Desktop password (min. 8)", "rdp_port": "Remote Desktop port", "firefox": "Install Firefox on the desktop", "sudo": "Give the desktop user sudo access", "clear_key": "Clear the saved SSH key (if the server was reinstalled)", "save_install": "Save and install", "save_only": "Save only", "cancel": "Cancel", "hint_new": "The Remote Desktop port must be open in your provider's firewall (ufw is opened automatically). OS: Ubuntu 22.04 / 24.04 or Debian 12 / 13.", "hint_local": "Installs on the server this panel runs on; no SSH needed.", "hint_edit": "Leave passwords empty to keep the current ones.", "st_new": "Not installed", "st_installing": "Installing", "st_installed": "Installed", "st_failed": "Failed", "st_removed": "Removed", "run_install": "Installing…", "run_status": "Checking…", "run_restart": "Restarting…", "run_uninstall": "Removing…", "install": "Install desktop", "status": "Status", "restart": "Restart xrdp", "reinstall": "Reinstall", "edit": "Edit", "log": "Log", "delete": "Delete", "dl_rdp": "Download .rdp file", "copy": "Copy address", "copied": "Copied", "no_job": "Nothing has run on this server yet.", "c_uninstall": "Remove the desktop from {name}? User {user} and their files will be deleted too.", "c_reinstall": "Install again? The new settings and password will be applied.", "c_remove": "{name}\n1 = also remove xrdp and the desktop user from the server, then delete it from the list\n2 = only delete it from the list", "this_server": "this server"}, "fa": {"lang": "زبان", "user": "نام کاربری", "pass": "رمز", "login": "ورود", "wrong": "نام کاربری یا رمز اشتباه است", "add": "سرور جدید", "local": "نصب روی همین سرور", "logout": "خروج", "empty": "هنوز سروری اضافه نکرده‌ای.", "add_first": "افزودن اولین سرور", "new_server": "سرور جدید", "local_title": "دسکتاپ روی همین سرور", "edit_title": "ویرایش {name}", "name_opt": "نام (دلخواه)", "name_ph": "مثلاً آلمان ۱", "ip": "IP سرور", "ssh_port": "پورت SSH", "ssh_user": "کاربر SSH", "ssh_pass": "رمز SSH", "desk_user": "نام کاربری دسکتاپ", "desk_pass": "رمز دسکتاپ (حداقل ۸)", "rdp_port": "پورت Remote Desktop", "firefox": "نصب Firefox روی دسکتاپ", "sudo": "دسترسی sudo برای کاربر دسکتاپ", "clear_key": "پاک کردن کلید SSH ذخیره‌شده (اگر سرور را دوباره نصب کرده‌ای)", "save_install": "ذخیره و نصب", "save_only": "فقط ذخیره", "cancel": "انصراف", "hint_new": "پورت Remote Desktop باید در فایروال دیتاسنتر باز باشد (ufw خودکار باز می‌شود). سیستم‌عامل: Ubuntu 22.04 / 24.04 یا Debian 12 / 13.", "hint_local": "روی همین سروری نصب می‌شود که پنل روی آن است؛ SSH لازم نیست.", "hint_edit": "رمزها را خالی بگذار تا قبلی‌ها بمانند.", "st_new": "نصب نشده", "st_installing": "در حال نصب", "st_installed": "نصب شده", "st_failed": "ناموفق", "st_removed": "حذف شده", "run_install": "در حال نصب…", "run_status": "در حال بررسی…", "run_restart": "در حال ری‌استارت…", "run_uninstall": "در حال حذف…", "install": "نصب دسکتاپ", "status": "وضعیت", "restart": "ری‌استارت xrdp", "reinstall": "نصب دوباره", "edit": "ویرایش", "log": "لاگ", "delete": "حذف", "dl_rdp": "دانلود فایل .rdp", "copy": "کپی آدرس", "copied": "کپی شد", "no_job": "هنوز کاری روی این سرور اجرا نشده.", "c_uninstall": "دسکتاپ از {name} حذف شود؟ کاربر {user} و فایل‌هایش هم پاک می‌شوند.", "c_reinstall": "دوباره نصب شود؟ تنظیمات و رمز جدید اعمال می‌شود.", "c_remove": "{name}\n۱ = xrdp و کاربر دسکتاپ را از خود سرور هم پاک کن، بعد از لیست حذف کن\n۲ = فقط از لیست حذف کن", "this_server": "همین سرور"}, "ar": {"lang": "اللغة", "user": "اسم المستخدم", "pass": "كلمة المرور", "login": "تسجيل الدخول", "wrong": "اسم المستخدم أو كلمة المرور غير صحيحة", "add": "خادم جديد", "local": "التثبيت على هذا الخادم", "logout": "تسجيل الخروج", "empty": "لا توجد خوادم بعد.", "add_first": "أضف أول خادم", "new_server": "خادم جديد", "local_title": "سطح المكتب على هذا الخادم", "edit_title": "تعديل {name}", "name_opt": "الاسم (اختياري)", "name_ph": "مثلاً: ألمانيا 1", "ip": "عنوان IP للخادم", "ssh_port": "منفذ SSH", "ssh_user": "مستخدم SSH", "ssh_pass": "كلمة مرور SSH", "desk_user": "اسم مستخدم سطح المكتب", "desk_pass": "كلمة مرور سطح المكتب (8 على الأقل)", "rdp_port": "منفذ Remote Desktop", "firefox": "تثبيت Firefox على سطح المكتب", "sudo": "منح مستخدم سطح المكتب صلاحية sudo", "clear_key": "مسح مفتاح SSH المحفوظ (إذا أُعيد تثبيت الخادم)", "save_install": "حفظ وتثبيت", "save_only": "حفظ فقط", "cancel": "إلغاء", "hint_new": "يجب أن يكون منفذ Remote Desktop مفتوحاً في جدار الحماية لدى مزوّد الخدمة (يُفتح ufw تلقائياً). النظام: Ubuntu 22.04 / 24.04 أو Debian 12 / 13.", "hint_local": "يُثبَّت على الخادم الذي تعمل عليه هذه اللوحة؛ لا حاجة إلى SSH.", "hint_edit": "اترك كلمات المرور فارغة للإبقاء على الحالية.", "st_new": "غير مثبّت", "st_installing": "جارٍ التثبيت", "st_installed": "مثبّت", "st_failed": "فشل", "st_removed": "محذوف", "run_install": "جارٍ التثبيت…", "run_status": "جارٍ الفحص…", "run_restart": "جارٍ إعادة التشغيل…", "run_uninstall": "جارٍ الحذف…", "install": "تثبيت سطح المكتب", "status": "الحالة", "restart": "إعادة تشغيل xrdp", "reinstall": "إعادة التثبيت", "edit": "تعديل", "log": "السجل", "delete": "حذف", "dl_rdp": "تنزيل ملف ‎.rdp", "copy": "نسخ العنوان", "copied": "تم النسخ", "no_job": "لم يُنفَّذ أي شيء على هذا الخادم بعد.", "c_uninstall": "حذف سطح المكتب من {name}؟ سيُحذف المستخدم {user} وملفاته أيضاً.", "c_reinstall": "إعادة التثبيت؟ ستُطبَّق الإعدادات وكلمة المرور الجديدة.", "c_remove": "{name}\n1 = احذف xrdp ومستخدم سطح المكتب من الخادم أيضاً، ثم من القائمة\n2 = احذفه من القائمة فقط", "this_server": "هذا الخادم"}, "ur": {"lang": "زبان", "user": "صارف نام", "pass": "پاس ورڈ", "login": "سائن اِن", "wrong": "صارف نام یا پاس ورڈ غلط ہے", "add": "نیا سرور", "local": "اسی سرور پر انسٹال کریں", "logout": "سائن آؤٹ", "empty": "ابھی کوئی سرور نہیں۔", "add_first": "اپنا پہلا سرور شامل کریں", "new_server": "نیا سرور", "local_title": "اسی سرور پر ڈیسک ٹاپ", "edit_title": "{name} میں ترمیم", "name_opt": "نام (اختیاری)", "name_ph": "مثلاً جرمنی 1", "ip": "سرور IP", "ssh_port": "SSH پورٹ", "ssh_user": "SSH صارف", "ssh_pass": "SSH پاس ورڈ", "desk_user": "ڈیسک ٹاپ صارف نام", "desk_pass": "ڈیسک ٹاپ پاس ورڈ (کم از کم 8)", "rdp_port": "Remote Desktop پورٹ", "firefox": "ڈیسک ٹاپ پر Firefox انسٹال کریں", "sudo": "ڈیسک ٹاپ صارف کو sudo رسائی دیں", "clear_key": "محفوظ SSH کلید صاف کریں (اگر سرور دوبارہ انسٹال ہوا ہو)", "save_install": "محفوظ کریں اور انسٹال کریں", "save_only": "صرف محفوظ کریں", "cancel": "منسوخ", "hint_new": "Remote Desktop پورٹ آپ کے فراہم کنندہ کی فائر وال میں کھلا ہونا چاہیے (ufw خودکار کھل جاتا ہے)۔ OS: Ubuntu 22.04 / 24.04 یا Debian 12 / 13۔", "hint_local": "اسی سرور پر انسٹال ہوتا ہے جس پر یہ پینل چل رہا ہے؛ SSH کی ضرورت نہیں۔", "hint_edit": "موجودہ پاس ورڈ رکھنے کے لیے خانے خالی چھوڑیں۔", "st_new": "انسٹال نہیں", "st_installing": "انسٹال ہو رہا ہے", "st_installed": "انسٹال شدہ", "st_failed": "ناکام", "st_removed": "ہٹا دیا گیا", "run_install": "انسٹال ہو رہا ہے…", "run_status": "جانچ ہو رہی ہے…", "run_restart": "ری اسٹارٹ ہو رہا ہے…", "run_uninstall": "ہٹایا جا رہا ہے…", "install": "ڈیسک ٹاپ انسٹال کریں", "status": "اسٹیٹس", "restart": "xrdp ری اسٹارٹ", "reinstall": "دوبارہ انسٹال", "edit": "ترمیم", "log": "لاگ", "delete": "حذف", "dl_rdp": "‎.rdp فائل ڈاؤن لوڈ کریں", "copy": "پتہ کاپی کریں", "copied": "کاپی ہو گیا", "no_job": "اس سرور پر ابھی کچھ نہیں چلا۔", "c_uninstall": "{name} سے ڈیسک ٹاپ ہٹائیں؟ صارف {user} اور اس کی فائلیں بھی حذف ہو جائیں گی۔", "c_reinstall": "دوبارہ انسٹال کریں؟ نئی سیٹنگز اور پاس ورڈ لاگو ہوں گے۔", "c_remove": "{name}\n1 = سرور سے xrdp اور ڈیسک ٹاپ صارف بھی ہٹائیں، پھر فہرست سے حذف کریں\n2 = صرف فہرست سے حذف کریں", "this_server": "یہ سرور"}, "tr": {"lang": "Dil", "user": "Kullanıcı adı", "pass": "Parola", "login": "Giriş yap", "wrong": "Kullanıcı adı veya parola yanlış", "add": "Yeni sunucu", "local": "Bu sunucuya kur", "logout": "Çıkış", "empty": "Henüz sunucu yok.", "add_first": "İlk sunucunu ekle", "new_server": "Yeni sunucu", "local_title": "Bu sunucudaki masaüstü", "edit_title": "{name} düzenle", "name_opt": "Ad (isteğe bağlı)", "name_ph": "ör. Almanya 1", "ip": "Sunucu IP", "ssh_port": "SSH portu", "ssh_user": "SSH kullanıcısı", "ssh_pass": "SSH parolası", "desk_user": "Masaüstü kullanıcı adı", "desk_pass": "Masaüstü parolası (en az 8)", "rdp_port": "Uzak Masaüstü portu", "firefox": "Masaüstüne Firefox kur", "sudo": "Masaüstü kullanıcısına sudo yetkisi ver", "clear_key": "Kayıtlı SSH anahtarını temizle (sunucu yeniden kurulduysa)", "save_install": "Kaydet ve kur", "save_only": "Sadece kaydet", "cancel": "İptal", "hint_new": "Uzak Masaüstü portu sağlayıcının güvenlik duvarında açık olmalı (ufw otomatik açılır). İS: Ubuntu 22.04 / 24.04 veya Debian 12 / 13.", "hint_local": "Bu panelin çalıştığı sunucuya kurulur; SSH gerekmez.", "hint_edit": "Mevcut parolaları korumak için boş bırak.", "st_new": "Kurulu değil", "st_installing": "Kuruluyor", "st_installed": "Kurulu", "st_failed": "Başarısız", "st_removed": "Kaldırıldı", "run_install": "Kuruluyor…", "run_status": "Kontrol ediliyor…", "run_restart": "Yeniden başlatılıyor…", "run_uninstall": "Kaldırılıyor…", "install": "Masaüstünü kur", "status": "Durum", "restart": "xrdp'yi yeniden başlat", "reinstall": "Yeniden kur", "edit": "Düzenle", "log": "Günlük", "delete": "Sil", "dl_rdp": ".rdp dosyasını indir", "copy": "Adresi kopyala", "copied": "Kopyalandı", "no_job": "Bu sunucuda henüz bir şey çalıştırılmadı.", "c_uninstall": "{name} üzerinden masaüstü kaldırılsın mı? {user} kullanıcısı ve dosyaları da silinecek.", "c_reinstall": "Yeniden kurulsun mu? Yeni ayarlar ve parola uygulanacak.", "c_remove": "{name}\n1 = xrdp ve masaüstü kullanıcısını sunucudan da kaldır, sonra listeden sil\n2 = sadece listeden sil", "this_server": "bu sunucu"}, "tk": {"lang": "Dil", "user": "Ulanyjy ady", "pass": "Açar sözi", "login": "Girmek", "wrong": "Ulanyjy ady ýa-da açar sözi nädogry", "add": "Täze serwer", "local": "Şu serwere gurnamak", "logout": "Çykmak", "empty": "Entek serwer ýok.", "add_first": "Ilkinji serweriňi goş", "new_server": "Täze serwer", "local_title": "Şu serwerdäki iş stoly", "edit_title": "{name} üýtgetmek", "name_opt": "Ady (islege görä)", "name_ph": "mysal: Germaniýa 1", "ip": "Serweriň IP-si", "ssh_port": "SSH porty", "ssh_user": "SSH ulanyjysy", "ssh_pass": "SSH açar sözi", "desk_user": "Iş stolunyň ulanyjy ady", "desk_pass": "Iş stolunyň açar sözi (iň az 8)", "rdp_port": "Remote Desktop porty", "firefox": "Iş stoluna Firefox gurnamak", "sudo": "Iş stolunyň ulanyjysyna sudo hukugyny bermek", "clear_key": "Ýatda saklanan SSH açaryny arassalamak (serwer täzeden gurlan bolsa)", "save_install": "Sakla we gurna", "save_only": "Diňe sakla", "cancel": "Ýatyr", "hint_new": "Remote Desktop porty üpjün edijiň firewall-ynda açyk bolmaly (ufw awtomatik açylýar). OS: Ubuntu 22.04 / 24.04 ýa-da Debian 12 / 13.", "hint_local": "Bu paneliň işleýän serwerine gurulýar; SSH gerek däl.", "hint_edit": "Häzirki açar sözleri saklamak üçin boş goý.", "st_new": "Gurulmadyk", "st_installing": "Gurulýar", "st_installed": "Gurlan", "st_failed": "Şowsuz", "st_removed": "Aýryldy", "run_install": "Gurulýar…", "run_status": "Barlanýar…", "run_restart": "Täzeden işledilýär…", "run_uninstall": "Aýrylýar…", "install": "Iş stolyny gurna", "status": "Ýagdaý", "restart": "xrdp-ni täzeden işlet", "reinstall": "Täzeden gurna", "edit": "Üýtget", "log": "Žurnal", "delete": "Poz", "dl_rdp": ".rdp faýlyny ýükle", "copy": "Salgyny göçür", "copied": "Göçürildi", "no_job": "Bu serwerde entek hiç zat işledilmedi.", "c_uninstall": "{name} serwerinden iş stoly aýrylsynmy? {user} ulanyjysy we onuň faýllary hem pozular.", "c_reinstall": "Täzeden gurnalsynmy? Täze sazlamalar we açar sözi ulanylar.", "c_remove": "{name}\n1 = xrdp we iş stolunyň ulanyjysyny serwerden hem aýyr, soň sanawdan poz\n2 = diňe sanawdan poz", "this_server": "şu serwer"}, "ru": {"lang": "Язык", "user": "Имя пользователя", "pass": "Пароль", "login": "Войти", "wrong": "Неверное имя пользователя или пароль", "add": "Новый сервер", "local": "Установить на этот сервер", "logout": "Выйти", "empty": "Серверов пока нет.", "add_first": "Добавьте первый сервер", "new_server": "Новый сервер", "local_title": "Рабочий стол на этом сервере", "edit_title": "Изменить {name}", "name_opt": "Название (необязательно)", "name_ph": "напр. Германия 1", "ip": "IP сервера", "ssh_port": "Порт SSH", "ssh_user": "Пользователь SSH", "ssh_pass": "Пароль SSH", "desk_user": "Пользователь рабочего стола", "desk_pass": "Пароль рабочего стола (мин. 8)", "rdp_port": "Порт удалённого рабочего стола", "firefox": "Установить Firefox на рабочий стол", "sudo": "Дать пользователю права sudo", "clear_key": "Сбросить сохранённый SSH-ключ (если сервер переустановлен)", "save_install": "Сохранить и установить", "save_only": "Только сохранить", "cancel": "Отмена", "hint_new": "Порт удалённого рабочего стола должен быть открыт в файрволе провайдера (ufw открывается автоматически). ОС: Ubuntu 22.04 / 24.04 или Debian 12 / 13.", "hint_local": "Устанавливается на сервер, где работает эта панель; SSH не нужен.", "hint_edit": "Оставьте пароли пустыми, чтобы сохранить текущие.", "st_new": "Не установлен", "st_installing": "Установка", "st_installed": "Установлен", "st_failed": "Ошибка", "st_removed": "Удалён", "run_install": "Установка…", "run_status": "Проверка…", "run_restart": "Перезапуск…", "run_uninstall": "Удаление…", "install": "Установить рабочий стол", "status": "Статус", "restart": "Перезапустить xrdp", "reinstall": "Переустановить", "edit": "Изменить", "log": "Журнал", "delete": "Удалить", "dl_rdp": "Скачать файл .rdp", "copy": "Копировать адрес", "copied": "Скопировано", "no_job": "На этом сервере ещё ничего не запускалось.", "c_uninstall": "Удалить рабочий стол с {name}? Пользователь {user} и его файлы тоже будут удалены.", "c_reinstall": "Установить заново? Будут применены новые настройки и пароль.", "c_remove": "{name}\n1 = удалить также xrdp и пользователя с сервера, затем из списка\n2 = только удалить из списка", "this_server": "этот сервер"}, "be": {"lang": "Мова", "user": "Імя карыстальніка", "pass": "Пароль", "login": "Увайсці", "wrong": "Няправільнае імя карыстальніка або пароль", "add": "Новы сервер", "local": "Усталяваць на гэты сервер", "logout": "Выйсці", "empty": "Сервераў пакуль няма.", "add_first": "Дадайце першы сервер", "new_server": "Новы сервер", "local_title": "Працоўны стол на гэтым серверы", "edit_title": "Змяніць {name}", "name_opt": "Назва (неабавязкова)", "name_ph": "напр. Германія 1", "ip": "IP сервера", "ssh_port": "Порт SSH", "ssh_user": "Карыстальнік SSH", "ssh_pass": "Пароль SSH", "desk_user": "Карыстальнік працоўнага стала", "desk_pass": "Пароль працоўнага стала (мін. 8)", "rdp_port": "Порт аддаленага працоўнага стала", "firefox": "Усталяваць Firefox на працоўны стол", "sudo": "Даць карыстальніку правы sudo", "clear_key": "Скінуць захаваны SSH-ключ (калі сервер пераўсталяваны)", "save_install": "Захаваць і ўсталяваць", "save_only": "Толькі захаваць", "cancel": "Скасаваць", "hint_new": "Порт аддаленага працоўнага стала павінен быць адкрыты ў файрволе правайдара (ufw адкрываецца аўтаматычна). АС: Ubuntu 22.04 / 24.04 або Debian 12 / 13.", "hint_local": "Усталёўваецца на сервер, дзе працуе гэтая панэль; SSH не патрэбны.", "hint_edit": "Пакіньце паролі пустымі, каб захаваць бягучыя.", "st_new": "Не ўсталяваны", "st_installing": "Усталёўка", "st_installed": "Усталяваны", "st_failed": "Памылка", "st_removed": "Выдалены", "run_install": "Усталёўка…", "run_status": "Праверка…", "run_restart": "Перазапуск…", "run_uninstall": "Выдаленне…", "install": "Усталяваць працоўны стол", "status": "Статус", "restart": "Перазапусціць xrdp", "reinstall": "Пераўсталяваць", "edit": "Змяніць", "log": "Журнал", "delete": "Выдаліць", "dl_rdp": "Спампаваць файл .rdp", "copy": "Скапіяваць адрас", "copied": "Скапіявана", "no_job": "На гэтым серверы яшчэ нічога не запускалася.", "c_uninstall": "Выдаліць працоўны стол з {name}? Карыстальнік {user} і яго файлы таксама будуць выдалены.", "c_reinstall": "Усталяваць нанова? Будуць ужыты новыя налады і пароль.", "c_remove": "{name}\n1 = выдаліць таксама xrdp і карыстальніка з сервера, потым са спіса\n2 = толькі выдаліць са спіса", "this_server": "гэты сервер"}, "zh": {"lang": "语言", "user": "用户名", "pass": "密码", "login": "登录", "wrong": "用户名或密码错误", "add": "新服务器", "local": "安装到本服务器", "logout": "退出", "empty": "还没有服务器。", "add_first": "添加第一台服务器", "new_server": "新服务器", "local_title": "本服务器上的桌面", "edit_title": "编辑 {name}", "name_opt": "名称（可选）", "name_ph": "例如 德国 1", "ip": "服务器 IP", "ssh_port": "SSH 端口", "ssh_user": "SSH 用户", "ssh_pass": "SSH 密码", "desk_user": "桌面用户名", "desk_pass": "桌面密码（至少 8 位）", "rdp_port": "远程桌面端口", "firefox": "在桌面上安装 Firefox", "sudo": "授予桌面用户 sudo 权限", "clear_key": "清除已保存的 SSH 密钥（如果服务器已重装）", "save_install": "保存并安装", "save_only": "仅保存", "cancel": "取消", "hint_new": "远程桌面端口必须在服务商防火墙中开放（ufw 会自动开放）。系统：Ubuntu 22.04 / 24.04 或 Debian 12 / 13。", "hint_local": "安装到运行此面板的服务器上，无需 SSH。", "hint_edit": "密码留空则保留当前密码。", "st_new": "未安装", "st_installing": "安装中", "st_installed": "已安装", "st_failed": "失败", "st_removed": "已移除", "run_install": "安装中…", "run_status": "检查中…", "run_restart": "重启中…", "run_uninstall": "移除中…", "install": "安装桌面", "status": "状态", "restart": "重启 xrdp", "reinstall": "重新安装", "edit": "编辑", "log": "日志", "delete": "删除", "dl_rdp": "下载 .rdp 文件", "copy": "复制地址", "copied": "已复制", "no_job": "此服务器上还没有运行过任何操作。", "c_uninstall": "从 {name} 移除桌面？用户 {user} 及其文件也将被删除。", "c_reinstall": "重新安装？将应用新的设置和密码。", "c_remove": "{name}\n1 = 同时从服务器移除 xrdp 和桌面用户，然后从列表删除\n2 = 仅从列表删除", "this_server": "本服务器"}, "ko": {"lang": "언어", "user": "사용자 이름", "pass": "암호", "login": "가입", "wrong": "사용자 이름 또는 암호가 틀립니다", "add": "새 봉사기", "local": "이 봉사기에 설치", "logout": "탈퇴", "empty": "아직 봉사기가 없습니다.", "add_first": "첫 봉사기 추가", "new_server": "새 봉사기", "local_title": "이 봉사기의 탁상화면", "edit_title": "{name} 편집", "name_opt": "이름 (선택)", "name_ph": "례: 독일 1", "ip": "봉사기 IP", "ssh_port": "SSH 포구", "ssh_user": "SSH 사용자", "ssh_pass": "SSH 암호", "desk_user": "탁상화면 사용자 이름", "desk_pass": "탁상화면 암호 (최소 8자)", "rdp_port": "원격 탁상화면 포구", "firefox": "탁상화면에 Firefox 설치", "sudo": "탁상화면 사용자에게 sudo 권한 부여", "clear_key": "저장된 SSH 열쇠 지우기 (봉사기를 다시 설치한 경우)", "save_install": "저장하고 설치", "save_only": "저장만", "cancel": "취소", "hint_new": "원격 탁상화면 포구는 제공자의 방화벽에서 열려 있어야 합니다 (ufw는 자동으로 열립니다). 조작체계: Ubuntu 22.04 / 24.04 또는 Debian 12 / 13.", "hint_local": "이 판이 실행되는 봉사기에 설치됩니다. SSH가 필요 없습니다.", "hint_edit": "현재 암호를 유지하려면 비워 두십시오.", "st_new": "설치 안 됨", "st_installing": "설치 중", "st_installed": "설치됨", "st_failed": "실패", "st_removed": "제거됨", "run_install": "설치 중…", "run_status": "확인 중…", "run_restart": "재시동 중…", "run_uninstall": "제거 중…", "install": "탁상화면 설치", "status": "상태", "restart": "xrdp 재시동", "reinstall": "다시 설치", "edit": "편집", "log": "기록", "delete": "삭제", "dl_rdp": ".rdp 파일 내려받기", "copy": "주소 복사", "copied": "복사됨", "no_job": "이 봉사기에서 아직 실행된 작업이 없습니다.", "c_uninstall": "{name}에서 탁상화면을 제거하겠습니까? 사용자 {user}와 그 파일도 삭제됩니다.", "c_reinstall": "다시 설치하겠습니까? 새 설정과 암호가 적용됩니다.", "c_remove": "{name}\n1 = 봉사기에서 xrdp와 사용자도 제거한 다음 목록에서 삭제\n2 = 목록에서만 삭제", "this_server": "이 봉사기"}, "my": {"lang": "ဘာသာစကား", "user": "အသုံးပြုသူအမည်", "pass": "စကားဝှက်", "login": "ဝင်ရန်", "wrong": "အသုံးပြုသူအမည် သို့မဟုတ် စကားဝှက် မှားနေသည်", "add": "ဆာဗာအသစ်", "local": "ဤဆာဗာတွင် ထည့်သွင်းရန်", "logout": "ထွက်ရန်", "empty": "ဆာဗာ မရှိသေးပါ။", "add_first": "ပထမဆုံး ဆာဗာကို ထည့်ပါ", "new_server": "ဆာဗာအသစ်", "local_title": "ဤဆာဗာရှိ ဒက်စ်တော့", "edit_title": "{name} ပြင်ဆင်ရန်", "name_opt": "အမည် (ရွေးချယ်နိုင်)", "name_ph": "ဥပမာ ဂျာမနီ 1", "ip": "ဆာဗာ IP", "ssh_port": "SSH ပို့တ်", "ssh_user": "SSH အသုံးပြုသူ", "ssh_pass": "SSH စကားဝှက်", "desk_user": "ဒက်စ်တော့ အသုံးပြုသူအမည်", "desk_pass": "ဒက်စ်တော့ စကားဝှက် (အနည်းဆုံး 8)", "rdp_port": "Remote Desktop ပို့တ်", "firefox": "ဒက်စ်တော့တွင် Firefox ထည့်သွင်းရန်", "sudo": "ဒက်စ်တော့ အသုံးပြုသူကို sudo ခွင့်ပြုရန်", "clear_key": "သိမ်းထားသော SSH key ကို ဖျက်ရန် (ဆာဗာ ပြန်တင်ထားလျှင်)", "save_install": "သိမ်းပြီး ထည့်သွင်းရန်", "save_only": "သိမ်းရုံသာ", "cancel": "မလုပ်တော့ပါ", "hint_new": "Remote Desktop ပို့တ်ကို ဝန်ဆောင်မှုပေးသူ၏ firewall တွင် ဖွင့်ထားရမည် (ufw ကို အလိုအလျောက် ဖွင့်ပေးသည်)။ OS: Ubuntu 22.04 / 24.04 သို့မဟုတ် Debian 12 / 13။", "hint_local": "ဤ panel လည်ပတ်နေသော ဆာဗာတွင် ထည့်သွင်းမည်။ SSH မလိုပါ။", "hint_edit": "လက်ရှိ စကားဝှက်များ ထားလိုပါက ကွက်လပ်ထားပါ။", "st_new": "မထည့်သွင်းရသေး", "st_installing": "ထည့်သွင်းနေသည်", "st_installed": "ထည့်သွင်းပြီး", "st_failed": "မအောင်မြင်", "st_removed": "ဖယ်ရှားပြီး", "run_install": "ထည့်သွင်းနေသည်…", "run_status": "စစ်ဆေးနေသည်…", "run_restart": "ပြန်စနေသည်…", "run_uninstall": "ဖယ်ရှားနေသည်…", "install": "ဒက်စ်တော့ ထည့်သွင်းရန်", "status": "အခြေအနေ", "restart": "xrdp ပြန်စရန်", "reinstall": "ပြန်ထည့်သွင်းရန်", "edit": "ပြင်ဆင်ရန်", "log": "မှတ်တမ်း", "delete": "ဖျက်ရန်", "dl_rdp": ".rdp ဖိုင် ဒေါင်းလုဒ်", "copy": "လိပ်စာ ကူးရန်", "copied": "ကူးပြီး", "no_job": "ဤဆာဗာတွင် ဘာမှ မလုပ်ဆောင်ရသေးပါ။", "c_uninstall": "{name} မှ ဒက်စ်တော့ကို ဖယ်ရှားမလား။ အသုံးပြုသူ {user} နှင့် ၎င်း၏ ဖိုင်များလည်း ပျက်မည်။", "c_reinstall": "ပြန်ထည့်သွင်းမလား။ ဆက်တင်နှင့် စကားဝှက်အသစ် အသက်ဝင်မည်။", "c_remove": "{name}\n1 = ဆာဗာမှ xrdp နှင့် အသုံးပြုသူကိုပါ ဖယ်ရှားပြီး စာရင်းမှ ဖျက်ရန်\n2 = စာရင်းမှသာ ဖျက်ရန်", "this_server": "ဤဆာဗာ"}, "vi": {"lang": "Ngôn ngữ", "user": "Tên người dùng", "pass": "Mật khẩu", "login": "Đăng nhập", "wrong": "Sai tên người dùng hoặc mật khẩu", "add": "Máy chủ mới", "local": "Cài trên máy chủ này", "logout": "Đăng xuất", "empty": "Chưa có máy chủ nào.", "add_first": "Thêm máy chủ đầu tiên", "new_server": "Máy chủ mới", "local_title": "Màn hình nền trên máy chủ này", "edit_title": "Sửa {name}", "name_opt": "Tên (tùy chọn)", "name_ph": "vd: Đức 1", "ip": "IP máy chủ", "ssh_port": "Cổng SSH", "ssh_user": "Người dùng SSH", "ssh_pass": "Mật khẩu SSH", "desk_user": "Tên người dùng màn hình nền", "desk_pass": "Mật khẩu màn hình nền (tối thiểu 8)", "rdp_port": "Cổng Remote Desktop", "firefox": "Cài Firefox trên màn hình nền", "sudo": "Cấp quyền sudo cho người dùng", "clear_key": "Xóa khóa SSH đã lưu (nếu máy chủ đã cài lại)", "save_install": "Lưu và cài đặt", "save_only": "Chỉ lưu", "cancel": "Hủy", "hint_new": "Cổng Remote Desktop phải được mở trong tường lửa của nhà cung cấp (ufw được mở tự động). HĐH: Ubuntu 22.04 / 24.04 hoặc Debian 12 / 13.", "hint_local": "Cài trên máy chủ đang chạy bảng điều khiển này; không cần SSH.", "hint_edit": "Để trống mật khẩu để giữ mật khẩu hiện tại.", "st_new": "Chưa cài", "st_installing": "Đang cài", "st_installed": "Đã cài", "st_failed": "Thất bại", "st_removed": "Đã gỡ", "run_install": "Đang cài…", "run_status": "Đang kiểm tra…", "run_restart": "Đang khởi động lại…", "run_uninstall": "Đang gỡ…", "install": "Cài màn hình nền", "status": "Trạng thái", "restart": "Khởi động lại xrdp", "reinstall": "Cài lại", "edit": "Sửa", "log": "Nhật ký", "delete": "Xóa", "dl_rdp": "Tải tệp .rdp", "copy": "Sao chép địa chỉ", "copied": "Đã sao chép", "no_job": "Chưa có tác vụ nào chạy trên máy chủ này.", "c_uninstall": "Gỡ màn hình nền khỏi {name}? Người dùng {user} và các tệp của họ cũng sẽ bị xóa.", "c_reinstall": "Cài lại? Cài đặt và mật khẩu mới sẽ được áp dụng.", "c_remove": "{name}\n1 = gỡ cả xrdp và người dùng khỏi máy chủ, rồi xóa khỏi danh sách\n2 = chỉ xóa khỏi danh sách", "this_server": "máy chủ này"}, "es": {"lang": "Idioma", "user": "Usuario", "pass": "Contraseña", "login": "Entrar", "wrong": "Usuario o contraseña incorrectos", "add": "Nuevo servidor", "local": "Instalar en este servidor", "logout": "Salir", "empty": "Aún no hay servidores.", "add_first": "Agrega tu primer servidor", "new_server": "Nuevo servidor", "local_title": "Escritorio en este servidor", "edit_title": "Editar {name}", "name_opt": "Nombre (opcional)", "name_ph": "p. ej. Alemania 1", "ip": "IP del servidor", "ssh_port": "Puerto SSH", "ssh_user": "Usuario SSH", "ssh_pass": "Contraseña SSH", "desk_user": "Usuario del escritorio", "desk_pass": "Contraseña del escritorio (mín. 8)", "rdp_port": "Puerto de Escritorio remoto", "firefox": "Instalar Firefox en el escritorio", "sudo": "Dar acceso sudo al usuario del escritorio", "clear_key": "Borrar la clave SSH guardada (si reinstalaste el servidor)", "save_install": "Guardar e instalar", "save_only": "Solo guardar", "cancel": "Cancelar", "hint_new": "El puerto de Escritorio remoto debe estar abierto en el firewall del proveedor (ufw se abre automáticamente). SO: Ubuntu 22.04 / 24.04 o Debian 12 / 13.", "hint_local": "Se instala en el servidor donde corre este panel; no necesita SSH.", "hint_edit": "Deja las contraseñas vacías para conservar las actuales.", "st_new": "No instalado", "st_installing": "Instalando", "st_installed": "Instalado", "st_failed": "Falló", "st_removed": "Eliminado", "run_install": "Instalando…", "run_status": "Comprobando…", "run_restart": "Reiniciando…", "run_uninstall": "Eliminando…", "install": "Instalar escritorio", "status": "Estado", "restart": "Reiniciar xrdp", "reinstall": "Reinstalar", "edit": "Editar", "log": "Registro", "delete": "Eliminar", "dl_rdp": "Descargar archivo .rdp", "copy": "Copiar dirección", "copied": "Copiado", "no_job": "Todavía no se ha ejecutado nada en este servidor.", "c_uninstall": "¿Quitar el escritorio de {name}? El usuario {user} y sus archivos también se borrarán.", "c_reinstall": "¿Instalar de nuevo? Se aplicarán la nueva configuración y la contraseña.", "c_remove": "{name}\n1 = quitar también xrdp y el usuario del servidor, luego borrarlo de la lista\n2 = solo borrarlo de la lista", "this_server": "este servidor"}, "am": {"lang": "ቋንቋ", "user": "የተጠቃሚ ስም", "pass": "የይለፍ ቃል", "login": "ግባ", "wrong": "የተጠቃሚ ስም ወይም የይለፍ ቃል ተሳስቷል", "add": "አዲስ ሰርቨር", "local": "በዚህ ሰርቨር ላይ ጫን", "logout": "ውጣ", "empty": "እስካሁን ሰርቨር የለም።", "add_first": "የመጀመሪያ ሰርቨርህን አክል", "new_server": "አዲስ ሰርቨር", "local_title": "በዚህ ሰርቨር ላይ ያለ ዴስክቶፕ", "edit_title": "{name} አርትዕ", "name_opt": "ስም (አማራጭ)", "name_ph": "ለምሳሌ ጀርመን 1", "ip": "የሰርቨር IP", "ssh_port": "SSH ፖርት", "ssh_user": "SSH ተጠቃሚ", "ssh_pass": "SSH የይለፍ ቃል", "desk_user": "የዴስክቶፕ ተጠቃሚ ስም", "desk_pass": "የዴስክቶፕ የይለፍ ቃል (ቢያንስ 8)", "rdp_port": "Remote Desktop ፖርት", "firefox": "በዴስክቶፑ ላይ Firefox ጫን", "sudo": "ለዴስክቶፕ ተጠቃሚ የsudo ፈቃድ ስጥ", "clear_key": "የተቀመጠውን SSH ቁልፍ አጥፋ (ሰርቨሩ እንደገና ከተጫነ)", "save_install": "አስቀምጥና ጫን", "save_only": "አስቀምጥ ብቻ", "cancel": "ሰርዝ", "hint_new": "Remote Desktop ፖርት በአቅራቢህ ፋየርዎል ውስጥ ክፍት መሆን አለበት (ufw በራሱ ይከፈታል)። ስርዓት: Ubuntu 22.04 / 24.04 ወይም Debian 12 / 13።", "hint_local": "ይህ ፓነል በሚሠራበት ሰርቨር ላይ ይጫናል፤ SSH አያስፈልግም።", "hint_edit": "የአሁኑን የይለፍ ቃል ለማቆየት ባዶ ተው።", "st_new": "አልተጫነም", "st_installing": "በመጫን ላይ", "st_installed": "ተጭኗል", "st_failed": "አልተሳካም", "st_removed": "ተወግዷል", "run_install": "በመጫን ላይ…", "run_status": "በመፈተሽ ላይ…", "run_restart": "እንደገና በማስጀመር ላይ…", "run_uninstall": "በማስወገድ ላይ…", "install": "ዴስክቶፕ ጫን", "status": "ሁኔታ", "restart": "xrdp እንደገና አስጀምር", "reinstall": "እንደገና ጫን", "edit": "አርትዕ", "log": "መዝገብ", "delete": "ሰርዝ", "dl_rdp": ".rdp ፋይል አውርድ", "copy": "አድራሻ ቅዳ", "copied": "ተቀድቷል", "no_job": "በዚህ ሰርቨር ላይ እስካሁን ምንም አልተሠራም።", "c_uninstall": "ዴስክቶፑን ከ{name} ይወገድ? ተጠቃሚ {user} እና ፋይሎቹም ይሰረዛሉ።", "c_reinstall": "እንደገና ይጫን? አዲሱ ቅንብርና የይለፍ ቃል ይተገበራሉ።", "c_remove": "{name}\n1 = xrdp እና ተጠቃሚውን ከሰርቨሩም አስወግድ፣ ከዚያ ከዝርዝሩ ሰርዝ\n2 = ከዝርዝሩ ብቻ ሰርዝ", "this_server": "ይህ ሰርቨር"}, "ti": {"lang": "ቋንቋ", "user": "ስም ተጠቃሚ", "pass": "መሕለፊ ቃል", "login": "እቶ", "wrong": "ስም ተጠቃሚ ወይ መሕለፊ ቃል ጌጋ እዩ", "add": "ሓድሽ ሰርቨር", "local": "ኣብዚ ሰርቨር ኣእቱ", "logout": "ውጻእ", "empty": "ክሳብ ሕጂ ሰርቨር የለን።", "add_first": "ቀዳማይ ሰርቨርካ ወስኽ", "new_server": "ሓድሽ ሰርቨር", "local_title": "ኣብዚ ሰርቨር ዘሎ ዴስክቶፕ", "edit_title": "{name} ኣመዓራርይ", "name_opt": "ስም (ኣማራጺ)", "name_ph": "ንኣብነት ጀርመን 1", "ip": "IP ሰርቨር", "ssh_port": "SSH ፖርት", "ssh_user": "SSH ተጠቃሚ", "ssh_pass": "SSH መሕለፊ ቃል", "desk_user": "ስም ተጠቃሚ ዴስክቶፕ", "desk_pass": "መሕለፊ ቃል ዴስክቶፕ (እንተወሓደ 8)", "rdp_port": "Remote Desktop ፖርት", "firefox": "ኣብ ዴስክቶፕ Firefox ኣእቱ", "sudo": "ንተጠቃሚ ዴስክቶፕ ፍቓድ sudo ሃብ", "clear_key": "ዝተዓቀበ SSH መፍትሕ ሰርዝ (ሰርቨር ዳግማይ እንተተኣትዩ)", "save_install": "ዓቅብን ኣእቱን", "save_only": "ዓቅብ ጥራይ", "cancel": "ሰርዝ", "hint_new": "Remote Desktop ፖርት ኣብ ፋየርዎል ኣቕራቢኻ ክፉት ክኸውን ኣለዎ (ufw ባዕሉ ይኽፈት)። ስርዓት: Ubuntu 22.04 / 24.04 ወይ Debian 12 / 13።", "hint_local": "ኣብቲ እዚ ፓነል ዝሰርሓሉ ሰርቨር ይኣቱ፤ SSH ኣየድልን።", "hint_edit": "ናይ ሕጂ መሕለፊ ቃላት ንምዕቃብ ባዶ ግደፎ።", "st_new": "ኣይኣተወን", "st_installing": "ይኣቱ ኣሎ", "st_installed": "ኣትዩ", "st_failed": "ኣይሰለጠን", "st_removed": "ተኣልዩ", "run_install": "ይኣቱ ኣሎ…", "run_status": "ይምርመር ኣሎ…", "run_restart": "ዳግማይ ይጅምር ኣሎ…", "run_uninstall": "ይእለ ኣሎ…", "install": "ዴስክቶፕ ኣእቱ", "status": "ኩነታት", "restart": "xrdp ዳግማይ ጀምር", "reinstall": "ዳግማይ ኣእቱ", "edit": "ኣመዓራርይ", "log": "መዝገብ", "delete": "ሰርዝ", "dl_rdp": ".rdp ፋይል ኣውርድ", "copy": "ኣድራሻ ቕዳሕ", "copied": "ተቐዲሑ", "no_job": "ኣብዚ ሰርቨር ክሳብ ሕጂ ዝተሰርሐ የለን።", "c_uninstall": "ዴስክቶፕ ካብ {name} ይእለ ዶ? ተጠቃሚ {user} ን ፋይላቱን እውን ክድምሰሱ እዮም።", "c_reinstall": "ዳግማይ ይእቶ ዶ? ሓድሽ ቅጥዒን መሕለፊ ቃልን ክትግበሩ እዮም።", "c_remove": "{name}\n1 = xrdp ን ተጠቃሚን ካብ ሰርቨር እውን ኣልዮ፣ ድሕሪኡ ካብ ዝርዝር ሰርዝ\n2 = ካብ ዝርዝር ጥራይ ሰርዝ", "this_server": "እዚ ሰርቨር"}};
 const B = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
 const $ = s => document.querySelector(s);
-const ST = {new:'نصب نشده', installing:'در حال نصب', installed:'نصب شده', failed:'ناموفق', removed:'حذف شده'};
-const ACT = {install:'نصب', status:'وضعیت', restart:'ری‌استارت', uninstall:'حذف'};
-let servers = [], open = {}, timers = {};
+let L = localStorage.getItem('sd-lang') || 'en'; if (!I18N[L]) L = 'en';
+function t(k, v){ let s = (I18N[L] && I18N[L][k]) || I18N.en[k] || k; if (v) for (const x in v) s = s.split('{'+x+'}').join(v[x]); return s; }
+function applyLang(){
+  const meta = LANGS.find(x => x[0] === L);
+  document.documentElement.lang = L; document.documentElement.dir = meta[3] ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = t(e.dataset.t));
+  document.querySelectorAll('[data-tp]').forEach(e => e.placeholder = t(e.dataset.tp));
+  document.querySelectorAll('.lang-cur').forEach(e => e.textContent = meta[1]);
+  document.querySelectorAll('.lang-list button').forEach(b => b.classList.toggle('on', b.dataset.l === L));
+  if (!$('#app').hidden && servers) render();
+}
+function setLang(l){ L = l; localStorage.setItem('sd-lang', l); applyLang(); }
+function mountLang(slot){
+  const n = $('#langTpl').content.firstElementChild.cloneNode(true); slot.replaceWith(n);
+  const list = n.querySelector('.lang-list'), q = n.querySelector('.lang-q');
+  list.innerHTML = LANGS.map(([c,nat,en,rtl]) => `<button type="button" role="option" data-l="${c}" data-s="${(nat+' '+en+' '+c).toLowerCase()}"><b dir="${rtl?'rtl':'ltr'}">${nat}</b><small>${en}</small></button>`).join('');
+  n.querySelector('.lang-btn').onclick = e => { e.stopPropagation(); document.querySelectorAll('.lang.open').forEach(x => x !== n && x.classList.remove('open')); n.classList.toggle('open'); if (n.classList.contains('open')) { q.value=''; filter(); q.focus(); } };
+  const filter = () => { const v = q.value.trim().toLowerCase(); list.querySelectorAll('button').forEach(b => b.hidden = v && !b.dataset.s.includes(v)); };
+  q.oninput = filter;
+  q.onkeydown = e => { if (e.key === 'Enter') { const b = [...list.querySelectorAll('button')].find(b => !b.hidden); if (b) b.click(); } if (e.key === 'Escape') n.classList.remove('open'); };
+  list.onclick = e => { const b = e.target.closest('button'); if (b) { setLang(b.dataset.l); n.classList.remove('open'); } };
+  n.querySelector('.lang-pop').onclick = e => e.stopPropagation();
+}
+document.addEventListener('click', () => document.querySelectorAll('.lang.open').forEach(x => x.classList.remove('open')));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.lang.open').forEach(x => x.classList.remove('open')); });
+document.querySelectorAll('.lang-slot').forEach(mountLang);
+
+let servers = null, open = {}, timers = {};
 async function api(p, body) {
   const o = body === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json','X-SF':'1'}, body:JSON.stringify(body)};
   const r = await fetch(B + 'api/' + p, o);
   if (r.status === 401 && p !== 'login') { show(false); throw new Error('login'); }
-  const t = await r.text(); let j = {}; try { j = t ? JSON.parse(t) : {}; } catch (e) {}
+  const tx = await r.text(); let j = {}; try { j = tx ? JSON.parse(tx) : {}; } catch (e) {}
   if (!r.ok) throw new Error(j.error || r.statusText);
   return j;
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function show(authed){ $('#login').hidden = authed; $('#app').hidden = !authed; if(authed) load(); }
-async function init(){ const j = await api('login'); $('#ver').textContent = 'v' + j.version; show(j.authed); }
+async function init(){ applyLang(); const j = await api('login'); $('#ver').textContent = 'v' + j.version; show(j.authed); }
 $('#lbtn').onclick = async () => { $('#lerr').textContent='';
-  try { await api('login', {User:$('#lu').value, Pass:$('#lp').value}); show(true); } catch(e){ $('#lerr').textContent = 'نام کاربری یا رمز اشتباه است'; } };
+  try { await api('login', {User:$('#lu').value, Pass:$('#lp').value}); show(true); } catch(e){ $('#lerr').textContent = t('wrong'); } };
 $('#lp').onkeydown = e => { if (e.key === 'Enter') $('#lbtn').click(); };
 async function logout(){ await api('logout', {}); show(false); }
-async function load(){
-  servers = await api('servers');
-  const L = $('#list');
-  if (!servers.length) { L.innerHTML = '<div class="card empty">هنوز سروری اضافه نکرده‌ای.<br><br><button class="pri" onclick="openForm()">+ افزودن اولین سرور</button></div>'; return; }
-  L.innerHTML = servers.map(s => {
+async function load(){ servers = await api('servers'); render(); }
+function render(){
+  const Lst = $('#list');
+  $('#localBtn').hidden = servers.some(s => s.Local);
+  if (!servers.length) { Lst.innerHTML = `<div class="card empty">${esc(t('empty'))}<br><br><button class="pri" onclick="openForm()">+ ${esc(t('add_first'))}</button> <button onclick="openForm(null,true)">${esc(t('local'))}</button></div>`; return; }
+  Lst.innerHTML = servers.map(s => {
     const st = s.Running ? 'installing' : s.Status, busy = !!s.Running;
-    const label = s.Running ? 'در حال ' + ACT[s.Running] : (ST[s.Status] || s.Status);
+    const label = s.Running ? t('run_' + s.Running) : t('st_' + s.Status);
+    const ssh = s.Local ? '' : `SSH ${esc(s.SSHUser)}@${esc(s.Host)}:${s.SSHPort} · `;
     return `<div class="card" id="c-${s.ID}">
-      <div class="row"><div><div class="name">${esc(s.Name)}</div><div class="meta">SSH ${esc(s.SSHUser)}@${esc(s.Host)}:${s.SSHPort} · RDP ${esc(s.Host)}:${s.RDPPort} · ${esc(s.DeskUser)}${s.Firefox?' · Firefox':''}</div></div>
-      <span class="badge s-${st}">${label}</span></div>
+      <div class="row"><div><div class="name">${esc(s.Name)}${s.Local ? `<span class="here">${esc(t('this_server'))}</span>` : ''}</div><div class="meta">${ssh}RDP ${esc(addr(s))} · ${esc(s.DeskUser)}${s.Firefox?' · Firefox':''}</div></div>
+      <span class="badge s-${st}">${esc(label)}</span></div>
       ${s.LastError ? `<div class="err">${esc(s.LastError)}</div>` : ''}
       <div class="acts">
-        ${s.Status === 'installed' ? `<button class="pri" onclick="rdp('${s.ID}')">دانلود فایل اتصال (.rdp)</button><button onclick="copyAddr('${s.ID}')">کپی آدرس</button>` : `<button class="pri" ${busy?'disabled':''} onclick="run('${s.ID}','install')">نصب دسکتاپ</button>`}
-        <button ${busy?'disabled':''} onclick="run('${s.ID}','status')">وضعیت</button>
-        <button ${busy?'disabled':''} onclick="run('${s.ID}','restart')">ری‌استارت xrdp</button>
-        ${s.Status === 'installed' ? `<button ${busy?'disabled':''} onclick="run('${s.ID}','install')">نصب دوباره</button>` : ''}
-        <button ${busy?'disabled':''} onclick="openForm('${s.ID}')">ویرایش</button>
-        <button onclick="toggleLog('${s.ID}')">لاگ</button>
-        <button class="danger" ${busy?'disabled':''} onclick="removeSrv('${s.ID}')">حذف</button>
+        ${s.Status === 'installed' ? `<button class="pri" onclick="rdp('${s.ID}')">${esc(t('dl_rdp'))}</button><button onclick="copyAddr('${s.ID}')">${esc(t('copy'))}</button>` : `<button class="pri" ${busy?'disabled':''} onclick="run('${s.ID}','install')">${esc(t('install'))}</button>`}
+        <button ${busy?'disabled':''} onclick="run('${s.ID}','status')">${esc(t('status'))}</button>
+        <button ${busy?'disabled':''} onclick="run('${s.ID}','restart')">${esc(t('restart'))}</button>
+        ${s.Status === 'installed' ? `<button ${busy?'disabled':''} onclick="run('${s.ID}','install')">${esc(t('reinstall'))}</button>` : ''}
+        <button ${busy?'disabled':''} onclick="openForm('${s.ID}')">${esc(t('edit'))}</button>
+        <button onclick="toggleLog('${s.ID}')">${esc(t('log'))}</button>
+        <button class="danger" ${busy?'disabled':''} onclick="removeSrv('${s.ID}')">${esc(t('delete'))}</button>
       </div><pre id="log-${s.ID}" ${open[s.ID]?'':'hidden'}></pre></div>`;
   }).join('');
   for (const s of servers) { if (open[s.ID] || s.Running) { open[s.ID] = open[s.ID] || {from:0}; open[s.ID].from = 0; $('#log-'+s.ID).hidden = false; poll(s.ID); } }
@@ -119,7 +172,7 @@ async function poll(id){
   const el = $('#log-'+id); if (!el) return;
   try {
     const j = await api('log?id=' + id + '&from=' + o.from);
-    if (o.from === 0) el.textContent = j.none ? 'هنوز کاری روی این سرور اجرا نشده.' : '';
+    if (o.from === 0) el.textContent = j.none ? t('no_job') : '';
     if (j.lines.length) { el.textContent += j.lines.join('\n') + '\n'; el.scrollTop = el.scrollHeight; }
     o.from = j.next;
     if (!j.done) timers[id] = setTimeout(() => poll(id), 1200);
@@ -129,43 +182,46 @@ async function poll(id){
 }
 async function run(id, action){
   const s = servers.find(x => x.ID === id);
-  if (action === 'uninstall' && !confirm('دسکتاپ از ' + s.Name + ' حذف شود؟ کاربر ' + s.DeskUser + ' و فایل‌هایش هم پاک می‌شوند.')) return;
-  if (action === 'install' && s.Status === 'installed' && !confirm('دوباره نصب شود؟ تنظیمات و رمز جدید اعمال می‌شود.')) return;
+  if (action === 'uninstall' && !confirm(t('c_uninstall', {name:s.Name, user:s.DeskUser}))) return;
+  if (action === 'install' && s.Status === 'installed' && !confirm(t('c_reinstall'))) return;
   try { await api('run', {ID:id, Action:action}); open[id] = {from:0, wasRunning:true}; await load(); } catch (e) { alert(e.message); }
 }
 async function removeSrv(id){
   const s = servers.find(x => x.ID === id);
-  const c = prompt('برای «' + s.Name + '»:\n۱ = xrdp و کاربر دسکتاپ را از خود سرور هم پاک کن، بعد از لیست حذف کن\n۲ = فقط از لیست حذف کن', '2');
+  const c = (prompt(t('c_remove', {name:s.Name}), '2') || '').replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
   if (c === '1') { await run(id, 'uninstall'); return; }
   if (c === '2') { await api('delete', {ID:id}); delete open[id]; load(); }
 }
-function openForm(id){
+function openForm(id, local){
   const f = $('#frm'); f.reset(); $('#ferr').textContent = '';
-  const s = servers.find(x => x.ID === id);
-  $('#ftitle').textContent = s ? 'ویرایش ' + s.Name : 'سرور جدید';
-  $('#hkrow').hidden = !(s && s.HostKey);
-  $('#fhint').textContent = s ? 'رمزها را خالی بگذار تا قبلی‌ها بمانند.' : 'پورت Remote Desktop باید در فایروال دیتاسنتر باز باشد (ufw خودکار باز می‌شود). سیستم‌عامل: Ubuntu 22.04 / 24.04 یا Debian 12 / 13.';
-  f.ID.value = s ? s.ID : '';
+  const s = id ? servers.find(x => x.ID === id) : null;
+  local = s ? s.Local : !!local;
+  $('#ftitle').textContent = s ? t('edit_title', {name:s.Name}) : (local ? t('local_title') : t('new_server'));
+  $('#sshBox').hidden = local;
+  $('#hkrow').hidden = !(s && s.HostKey && !local);
+  $('#fhint').textContent = s ? t('hint_edit') : (local ? t('hint_local') : t('hint_new'));
+  f.ID.value = s ? s.ID : ''; f.Local.value = local ? '1' : '';
   if (s) { for (const k of ['Name','Host','SSHPort','SSHUser','DeskUser','RDPPort']) f[k].value = s[k]; f.Firefox.checked = s.Firefox; f.Sudo.checked = s.Sudo; }
   dlg.showModal();
 }
 async function save(install){
   const f = $('#frm'), d = {};
   for (const k of ['ID','Name','Host','SSHUser','SSHPass','DeskUser','DeskPass']) d[k] = f[k].value.trim();
+  d.Local = f.Local.value === '1';
   d.SSHPort = parseInt(f.SSHPort.value) || 22; d.RDPPort = parseInt(f.RDPPort.value) || 3389; d.Firefox = f.Firefox.checked; d.Sudo = f.Sudo.checked; d.ClearHostKey = f.ClearHostKey.checked;
   try { const j = await api('servers', d); dlg.close(); await load(); if (install) run(j.id, 'install'); }
   catch (e) { $('#ferr').textContent = e.message; }
 }
-function addr(s){ return (s.Host.includes(':') ? '['+s.Host+']' : s.Host) + ':' + s.RDPPort; }
+function addr(s){ const h = s.RDPHost || s.Host; return (h.includes(':') ? '['+h+']' : h) + ':' + s.RDPPort; }
 function rdp(id){
   const s = servers.find(x => x.ID === id);
-  const t = ['full address:s:' + addr(s), 'username:s:' + s.DeskUser, 'screen mode id:i:2', 'session bpp:i:24',
+  const tx = ['full address:s:' + addr(s), 'username:s:' + s.DeskUser, 'screen mode id:i:2', 'session bpp:i:24',
     'audiomode:i:2', 'redirectclipboard:i:1', 'authentication level:i:0', 'prompt for credentials:i:0'].join('\r\n') + '\r\n';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([t], {type:'application/x-rdp'}));
-  a.download = (s.Name || s.Host).replace(/[^\w.-]+/g, '_') + '.rdp'; a.click();
+  a.href = URL.createObjectURL(new Blob([tx], {type:'application/x-rdp'}));
+  a.download = (s.Name || s.Host).replace(/[\\/:*?\"<>|\s]+/g, '_') + '.rdp'; a.click();
 }
-function copyAddr(id){ const s = servers.find(x => x.ID === id); navigator.clipboard.writeText(addr(s)).then(() => alert('کپی شد: ' + addr(s))); }
+function copyAddr(id){ const s = servers.find(x => x.ID === id); navigator.clipboard.writeText(addr(s)).then(() => alert(t('copied') + ': ' + addr(s))); }
 init();
 </script>
 </body>

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -140,9 +141,9 @@ func (p *Panel) login(w http.ResponseWriter, r *http.Request) {
 }
 
 type serverView struct {
-	ID, Name, Host, SSHUser, DeskUser, HostKey, Status, LastError, Updated, Running string
-	SSHPort, RDPPort                                                              int
-	Firefox, Sudo                                                                 bool
+	ID, Name, Host, RDPHost, SSHUser, DeskUser, HostKey, Status, LastError, Updated, Running string
+	SSHPort, RDPPort                                                                       int
+	Firefox, Sudo, Local                                                                   bool
 }
 
 func (p *Panel) servers(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +160,10 @@ func (p *Panel) servers(w http.ResponseWriter, r *http.Request) {
 	for _, s := range list {
 		v := serverView{ID: s.ID, Name: s.Name, Host: s.Host, SSHPort: s.SSHPort, SSHUser: s.SSHUser, DeskUser: s.DeskUser,
 			RDPPort: s.RDPPort, Firefox: s.Firefox, Sudo: s.Sudo, HostKey: s.HostKey, Status: s.Status,
-			LastError: s.LastError, Updated: s.Updated}
+			LastError: s.LastError, Updated: s.Updated, Local: s.Local, RDPHost: s.Host}
+		if s.Local {
+			v.RDPHost = orStr(p.st.Cfg.PublicHost, s.Host)
+		}
 		if j := p.run.Job(s.ID); j != nil {
 			j.mu.Lock()
 			if !j.Done {
@@ -176,7 +180,7 @@ func (p *Panel) saveServer(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		ID, Name, Host, SSHUser, SSHPass, DeskUser, DeskPass string
 		SSHPort, RDPPort                                     int
-		Firefox, Sudo, ClearHostKey                          bool
+		Firefox, Sudo, ClearHostKey, Local                   bool
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&in); err != nil {
 		errOut(w, 400, "bad request")
@@ -189,10 +193,23 @@ func (p *Panel) saveServer(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if in.ID != "" {
+		in.Local = sv.Local
+	}
+	if in.Local {
+		if in.ID == "" {
+			if list, _ := p.st.Servers(); hasLocal(list) {
+				errOut(w, 409, "this server is already in the list")
+				return
+			}
+		}
+		in.Host, in.SSHPort, in.SSHUser, in.SSHPass = "localhost", 22, "root", "-"
+		in.Name = orStr(strings.TrimSpace(in.Name), localName())
+	}
 	in.Host = strings.Trim(strings.TrimSpace(in.Host), "[]")
 	in.DeskUser = strings.ToLower(strings.TrimSpace(in.DeskUser))
 	switch {
-	case in.Host == "" || (net.ParseIP(in.Host) == nil && !domainRe.MatchString(in.Host)):
+	case !in.Local && (in.Host == "" || (net.ParseIP(in.Host) == nil && !domainRe.MatchString(in.Host))):
 		errOut(w, 400, "invalid server IP or host")
 		return
 	case !userRe.MatchString(in.DeskUser) || reserved[in.DeskUser]:
@@ -207,7 +224,7 @@ func (p *Panel) saveServer(w http.ResponseWriter, r *http.Request) {
 	case in.RDPPort == in.SSHPort && in.RDPPort != 0:
 		errOut(w, 400, "RDP port must differ from the SSH port")
 		return
-	case in.SSHPass == "" && sv.SSHPass == "":
+	case !in.Local && in.SSHPass == "" && sv.SSHPass == "":
 		errOut(w, 400, "SSH password is required")
 		return
 	}
@@ -223,7 +240,8 @@ func (p *Panel) saveServer(w http.ResponseWriter, r *http.Request) {
 	}
 	sv.Host, sv.SSHPort, sv.SSHUser = in.Host, in.SSHPort, orStr(strings.TrimSpace(in.SSHUser), "root")
 	sv.DeskUser, sv.RDPPort, sv.Firefox, sv.Sudo = in.DeskUser, in.RDPPort, in.Firefox, in.Sudo
-	if in.SSHPass != "" {
+	sv.Local = in.Local
+	if in.SSHPass != "" && !in.Local {
 		sv.SSHPass = p.st.Encrypt(in.SSHPass)
 	}
 	if in.DeskPass != "" {
@@ -280,4 +298,20 @@ func (p *Panel) logs(w http.ResponseWriter, r *http.Request) {
 	from, _ := strconv.Atoi(r.URL.Query().Get("from"))
 	lines, next, done, ok := j.snapshot(from)
 	jsonOut(w, 200, map[string]any{"lines": lines, "next": next, "done": done, "ok": ok, "action": j.Action})
+}
+
+func hasLocal(l []*Server) bool {
+	for _, x := range l {
+		if x.Local {
+			return true
+		}
+	}
+	return false
+}
+
+func localName() string {
+	if h, err := os.Hostname(); err == nil && h != "" && h != "(none)" && h != "localhost" {
+		return h
+	}
+	return "this server"
 }
