@@ -215,7 +215,9 @@ async function save(install){
 function addr(s){ const h = s.RDPHost || s.Host; return (h.includes(':') ? '['+h+']' : h) + ':' + s.RDPPort; }
 function rdp(id){
   const s = servers.find(x => x.ID === id);
-  const tx = ['full address:s:' + addr(s), 'username:s:' + s.DeskUser, 'screen mode id:i:2', 'session bpp:i:24',
+  const tx = ['full address:s:' + addr(s), 'username:s:' + s.DeskUser, 'screen mode id:i:2', 'session bpp:i:16',
+    'connection type:i:2', 'disable wallpaper:i:1', 'allow font smoothing:i:0', 'allow desktop composition:i:0',
+    'disable full window drag:i:1', 'disable menu anims:i:1', 'disable themes:i:1', 'bitmapcachepersistenable:i:1', 'compression:i:1',
     'audiomode:i:2', 'redirectclipboard:i:1', 'authentication level:i:0', 'prompt for credentials:i:0'].join('\r\n') + '\r\n';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([tx], {type:'application/x-rdp'}));

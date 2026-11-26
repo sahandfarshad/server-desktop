@@ -81,9 +81,9 @@ if [ "$ID" = ubuntu ] && ! grep -rhqs '^deb .* universe' /etc/apt/sources.list /
 fi
 apt-get update -q
 apt-get install -yq --no-install-recommends ca-certificates curl wget gnupg openssl \
-  xrdp xorgxrdp icewm xterm pcmanfm dbus-x11 x11-xserver-utils xdg-utils \
+  xrdp xorgxrdp icewm xterm pcmanfm scrot dbus-x11 x11-xserver-utils xdg-utils \
   fonts-dejavu-core fonts-liberation fonts-noto-core ssl-cert 2>&1 | grep -E '^(Setting up|E:)' || true
-for c in xrdp xrdp-sesman icewm-session xterm; do command -v $c >/dev/null || die "$c failed to install"; done
+for c in xrdp xrdp-sesman icewm-session xterm scrot; do command -v $c >/dev/null || die "$c failed to install"; done
 for f in fonts-vazirmatn fonts-noto-color-emoji; do apt-get install -yq --no-install-recommends $f >/dev/null 2>&1 || echo "(optional font $f not available)"; done
 
 if [ "${SD_FIREFOX:-0}" = 1 ]; then
@@ -128,7 +128,22 @@ P
   command -v firefox >/dev/null && echo 'prog "Firefox" firefox firefox'
 } >"$H/.icewm/toolbar"
 cp "$H/.icewm/toolbar" "$H/.icewm/menu"
-chown -R "$SD_USER:$SD_USER" "$H/.xsession" "$H/.icewm"
+# Screenshots: saved to ~/Pictures (Print = whole screen, Shift+Print or the menu = pick an area)
+SHOT='mkdir -p ~/Pictures && scrot'
+SHOTF='~/Pictures/screenshot-%Y-%m-%d_%H-%M-%S.png'
+echo "prog \"Screenshot\" camera-photo sh -c \"$SHOT -d 1 $SHOTF\"" >>"$H/.icewm/toolbar"
+{
+  echo "prog \"Screenshot\" camera-photo sh -c \"$SHOT -d 1 $SHOTF\""
+  echo "prog \"Screenshot (area)\" camera-photo sh -c \"$SHOT -s $SHOTF\""
+  echo 'prog "Pictures" folder pcmanfm Pictures'
+} >>"$H/.icewm/menu"
+cat >"$H/.icewm/keys" <<K
+key "Print" sh -c "$SHOT $SHOTF"
+key "Shift+Print" sh -c "$SHOT -s $SHOTF"
+key "Ctrl+Alt+s" sh -c "$SHOT -s $SHOTF"
+K
+install -d -m 755 -o "$SD_USER" -g "$SD_USER" "$H/Pictures"
+chown -R "$SD_USER:$SD_USER" "$H/.xsession" "$H/.icewm" "$H/Pictures"
 # Default system-wide session too, so any user logs into IceWM.
 update-alternatives --set x-session-manager /usr/bin/icewm-session >/dev/null 2>&1 || true
 
@@ -140,6 +155,11 @@ sed -i "0,/^port=/s/^port=.*/port=$SD_PORT/" /etc/xrdp/xrdp.ini
 sed -i '/^\[Xorg\]/,$ s/^port=.*/port=-1/' /etc/xrdp/xrdp.ini
 grep -q "^port=$SD_PORT" /etc/xrdp/xrdp.ini || die "could not set the RDP port in /etc/xrdp/xrdp.ini"
 sed -i 's/^max_bpp=.*/max_bpp=24/' /etc/xrdp/xrdp.ini
+# Speed: bigger send buffer (xrdp's own advice for laggy links) + compression on.
+sed -i 's/^#\?tcp_send_buffer_bytes=.*/tcp_send_buffer_bytes=4194304/' /etc/xrdp/xrdp.ini
+grep -q '^tcp_send_buffer_bytes=' /etc/xrdp/xrdp.ini || sed -i '0,/^\[Globals\]/s//[Globals]\ntcp_send_buffer_bytes=4194304/' /etc/xrdp/xrdp.ini
+sed -i 's/^bitmap_compression=.*/bitmap_compression=true/; s/^bulk_compression=.*/bulk_compression=true/' /etc/xrdp/xrdp.ini
+echo 'net.core.wmem_max = 8388608' >/etc/sysctl.d/60-server-desktop.conf; sysctl -q -p /etc/sysctl.d/60-server-desktop.conf || true
 # Only offer the Xorg session on the login screen (Xvnc/vnc-any/neutrinordp are not installed/used).
 awk '/^\[/{n=$0; gsub(/[][]/,"",n); skip=(n=="Xvnc"||n=="vnc-any"||n=="neutrinordp-any"||n=="Xvnc-any")} !skip' /etc/xrdp/xrdp.ini >/etc/xrdp/xrdp.ini.sd && mv /etc/xrdp/xrdp.ini.sd /etc/xrdp/xrdp.ini
 # Root login over RDP off; one session per user that reconnects on return.
