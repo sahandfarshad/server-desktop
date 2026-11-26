@@ -7,6 +7,13 @@ step() { printf '==> %s\n' "$*"; }
 die() { printf 'ERROR: %s\n' "$*"; exit 1; }
 [ "$(id -u)" -eq 0 ] || die "root (or passwordless sudo) is required"
 UNITS="xrdp xrdp-sesman"
+# restart xrdp even when an old session hangs its stop
+xrestart() {
+  timeout 20 systemctl restart $UNITS && return 0
+  echo "xrdp did not stop cleanly; forcing it"
+  systemctl kill -s KILL xrdp xrdp-sesman 2>/dev/null; pkill -9 -x xrdp 2>/dev/null; pkill -9 -x xrdp-sesman 2>/dev/null; sleep 1
+  systemctl reset-failed xrdp xrdp-sesman 2>/dev/null; systemctl start $UNITS
+}
 MARK=/etc/server-desktop.user
 
 status() {
@@ -31,7 +38,7 @@ restart)
     U=$(cat $MARK)
     pkill -u "$U" -f 'Xorg|icewm|xrdp-chansrv' 2>/dev/null && echo "closed the open desktop session of $U" || true
   fi
-  systemctl restart $UNITS; sleep 2; status
+  xrestart; sleep 2; status
   for u in $UNITS; do systemctl is-active --quiet $u || die "$u is not running (journalctl -u $u)"; done
   exit 0 ;;
 uninstall)
@@ -127,7 +134,10 @@ update-alternatives --set x-session-manager /usr/bin/icewm-session >/dev/null 2>
 
 step "Configuring xrdp (port $SD_PORT)"
 adduser xrdp ssl-cert >/dev/null 2>&1 || true
-sed -i "s/^port=.*/port=$SD_PORT/" /etc/xrdp/xrdp.ini
+# Only the listen port in [Globals]; the session sections keep port=-1 (a fixed
+# port there makes the session connect back to xrdp itself = black screen).
+sed -i "0,/^port=/s/^port=.*/port=$SD_PORT/" /etc/xrdp/xrdp.ini
+sed -i '/^\[Xorg\]/,$ s/^port=.*/port=-1/' /etc/xrdp/xrdp.ini
 grep -q "^port=$SD_PORT" /etc/xrdp/xrdp.ini || die "could not set the RDP port in /etc/xrdp/xrdp.ini"
 sed -i 's/^max_bpp=.*/max_bpp=24/' /etc/xrdp/xrdp.ini
 # Only offer the Xorg session on the login screen (Xvnc/vnc-any/neutrinordp are not installed/used).
@@ -147,7 +157,7 @@ ResultActive=yes
 K
 fi
 systemctl enable $UNITS >/dev/null 2>&1
-systemctl restart $UNITS
+xrestart
 if command -v ufw >/dev/null && ufw status | grep -q 'Status: active'; then ufw allow "$SD_PORT/tcp" >/dev/null; echo "ufw: $SD_PORT opened"; fi
 
 step "Checking"
